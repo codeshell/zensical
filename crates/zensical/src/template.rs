@@ -95,7 +95,7 @@ impl Template<'_> {
         &self, config: &Config, nav: &Navigation,
     ) -> Result<String, Error> {
         let template = self.env.get_template(&self.name)?;
-        let pages = nav.iter().collect::<Vec<_>>();
+        let pages: Vec<_> = nav.iter().cloned().collect();
 
         // Create context and render template
         template.render(context! {
