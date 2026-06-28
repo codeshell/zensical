@@ -6,6 +6,9 @@ on:
       tag:
         description: 'Release tag (e.g., v0.0.46-patch-1)'
         required: true
+      ref:
+        description: 'Source branch (e.g., patch-1)'
+        required: true
 
 jobs:
   build:
@@ -20,9 +23,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
-          ref: patch-1
+          ref: ${{ github.event.inputs.ref }}
       
       - uses: astral-sh/setup-uv@v8.2.0
         with:
@@ -43,7 +46,7 @@ jobs:
       
       - run: uv build
       
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ runner.os }}
           path: dist/
@@ -56,7 +59,7 @@ jobs:
       contents: write
     
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: all-wheels
       
@@ -66,7 +69,7 @@ jobs:
           find all-wheels -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec cp {} dist/ \;
       
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag }}
           files: dist/*
