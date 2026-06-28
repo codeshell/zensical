@@ -1,0 +1,76 @@
+name: Build and Release Wheels
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.0.46-patch-1)'
+        required: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+          - os: windows-latest
+            python-version: "3.10"
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: patch-1
+      
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: auto
+          cache-dependency-glob: "uv.lock"
+      
+      - run: uv python install ${{ matrix.python-version }}
+      
+      - run: uv sync
+      
+      - name: Prepare build (Linux)
+        if: runner.os == 'Linux'
+        run: uv run python scripts/prepare.py
+      
+      - name: Prepare build (Windows)
+        if: runner.os == 'Windows'
+        run: python scripts/prepare.py
+      
+      - run: uv build
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ runner.os }}
+          path: dist/
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-wheels
+      
+      - name: Flatten artifacts
+        run: |
+          mkdir -p dist
+          find all-wheels -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec cp {} dist/ \;
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          files: dist/*
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
