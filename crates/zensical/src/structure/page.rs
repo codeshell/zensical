@@ -210,11 +210,13 @@ impl Page {
         self.ancestors = nav.ancestors(self);
         self.previous_page = nav.previous_page(self);
         self.next_page = nav.next_page(self);
+        let pages = nav.iter().collect::<Vec<_>>();
 
         // Create context and render template
         let output = template.render_with_context(context! {
             generator => GENERATOR,
             nav => nav,
+            pages => pages,
             base_url => config.get_base_url(&self.url),
             extra_css => config.project.extra_css.clone(),
             extra_javascript => config.project.extra_javascript.clone(),
